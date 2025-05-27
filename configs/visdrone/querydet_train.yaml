@@ -10,13 +10,13 @@ MODEL:
   
   ANCHOR_GENERATOR:
     NAME: "AnchorGeneratorWithCenter"
-    SIZES: !!python/object/apply:eval ["[[x, x * 2**(1.0/3), x * 2**(2.0/3)] for x in [16, 32, 64, 128, 256, 512]]"]
+    SIZES: !!python/object/apply:eval ["[[x, x * 2**(1.0/3), x * 2**(2.0/3)] for x in [16, 32, 64]]"]  # Reduced to 3 scales
   
   RETINANET:
     IOU_THRESHOLDS: [0.4, 0.5]
     IOU_LABELS: [0, -1, 1]
     NUM_CLASSES: 10
-    IN_FEATURES: ["p2", "p3", "p4", "p5", "p6", "p7"]  
+    IN_FEATURES: ["p2", "p3", "p4"]  # Must include p2, but reduced to 3 levels
     
   RESNETS:
     OUT_FEATURES: ["res2", "res3", "res4", "res5"]
@@ -26,14 +26,14 @@ MODEL:
   
   QUERY:
     Q_FEATURE_TRAIN: [1, 2]
-    FEATURES_WHOLE_TEST: [2, 3, 4, 5]
+    FEATURES_WHOLE_TEST: [2, 3]  # Reduced to match 3 levels
     FEATURES_VALUE_TEST: [0, 1]
     Q_FEATURE_TEST: [1, 2]
 
-    QUERY_LOSS_WEIGHT: [10., 10.]
-    QUERY_LOSS_GAMMA: [1.3, 1.3]
+    QUERY_LOSS_WEIGHT: [0.1, 0.1]  # Much smaller weights for stability
+    QUERY_LOSS_GAMMA: [2.0, 2.0]
 
-    ENCODE_CENTER_DIS_COEFF: [1., 1.]
+    ENCODE_CENTER_DIS_COEFF: [0.01, 0.01]  # Much smaller for stability
     ENCODE_SMALL_OBJ_SCALE: [[0, 32], [0, 64]]
     
     QUERY_INFER: False
@@ -41,34 +41,26 @@ MODEL:
   CUSTOM:
     GRADIENT_CHECKPOINT: True
     USE_LOOP_MATCHER: True
-    FOCAL_LOSS_ALPHAS: [0.25, 0.25, 0.25, 0.25, 0.25, 0.25]
-    FOCAL_LOSS_GAMMAS: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0]
-    CLS_WEIGHTS: [1.0, 1.4, 1.8, 2.2, 2.6, 2.6]
-    REG_WEIGHTS: [1.0, 1.4, 1.8, 2.2, 2.6, 2.6]
-    
+    FOCAL_LOSS_ALPHAS: [0.25, 0.25, 0.25]  # 3 levels
+    FOCAL_LOSS_GAMMAS: [2.0, 2.0, 2.0]     # 3 levels
+    CLS_WEIGHTS: [1.0, 1.0, 1.0]           # 3 levels, simplified
+    REG_WEIGHTS: [1.0, 1.0, 1.0]           # 3 levels, simplified
 
 SOLVER:
-  BASE_LR: 0.01
+  BASE_LR: 0.00001       # Very small learning rate
   STEPS: (30000, 40000)
   MAX_ITER: 50000
-  IMS_PER_BATCH: 4
+  IMS_PER_BATCH: 1
   AMP:
-    ENABLED: True
-  CLIP_GRADIENTS:
-    ENABLED: True
-    CLIP_TYPE: value
-    CLIP_VALUE: 35.0
-    NORM_TYPE: 2.0
+    ENABLED: False       # Disable AMP to avoid potential issues
+  # Remove CLIP_GRADIENTS to avoid potential issues
 
 VISDRONE:
-  SHORT_LENGTH: [800]
-  MAX_LENGTH: 1333
+  SHORT_LENGTH: [480]    # Smaller images
+  MAX_LENGTH: 800        # Smaller images
 
 TEST:  
   EVAL_PERIOD: 0
-  DETECTIONS_PER_IMAGE: 500
-
-META_INFO:
-  EVAL_GPU_TIME: True
+  DETECTIONS_PER_IMAGE: 50  # Reduced
 
 VIS_PERIOD: 0
